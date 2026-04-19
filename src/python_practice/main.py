@@ -5,7 +5,7 @@ def main():
     print("main.py: S3Utility successfully imported from utils.")
 
     # s3_content = s3.get_object_as_string('my-bucket', 'test.txt')
-    
+
     # RdsUtility Sample
     # rds = RdsUtility(resource_aws_arn='arn...', secret_aws_arn='arn...', database='my_db')
 
@@ -15,4 +15,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
