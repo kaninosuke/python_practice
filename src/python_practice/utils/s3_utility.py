@@ -2,7 +2,7 @@
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from typing import Optional, Union, List, Dict, Any
+from typing import Any
 import logging
 import os
 from ..errors import S3ServiceError
@@ -19,7 +19,7 @@ DEFAULT_S3_CONTENT_TYPE = 'text/plain'
 
 class S3Utility:
 
-    def __init__(self, region_name: Optional[str] = None, max_retries: Optional[int] = None):
+    def __init__(self, region_name: str | None = None, max_retries: int | None = None):
 
         # Priority Logic: Argument > Environment Variable > Default
         if max_retries is None:
@@ -41,7 +41,7 @@ class S3Utility:
         )
         self.s3_client = boto3.client('s3', region_name=region_name, config=config)
 
-    def get_object_as_string(self, bucket_name: str, object_key: str, encoding: str = DEFAULT_S3_ENCODING) -> Optional[str]:
+    def get_object_as_string(self, bucket_name: str, object_key: str, encoding: str = DEFAULT_S3_ENCODING) -> str | None:
 
         try:
             response = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)

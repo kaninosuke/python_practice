@@ -2,7 +2,7 @@
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from typing import List, Dict, Any, Optional
+from typing import Any
 import logging
 import os
 from ..errors import RDSServiceError
@@ -16,7 +16,7 @@ RDS_INITIAL_ATTEMPT_COUNT = 1
 
 class RdsUtility:
 
-    def __init__(self, resource_aws_arn: str, secret_aws_arn: str, database: str, region_name: Optional[str] = None, max_retries: Optional[int] = None):
+    def __init__(self, resource_aws_arn: str, secret_aws_arn: str, database: str, region_name: str | None = None, max_retries: int | None = None):
 
         # Priority Logic: Argument > Environment Variable > Default
         if max_retries is None:
@@ -41,7 +41,7 @@ class RdsUtility:
         self.secret_aws_arn = secret_aws_arn
         self.database = database
 
-    def execute_select(self, sql: str) -> List[Dict[str, Any]]:
+    def execute_select(self, sql: str) -> list[dict[str, Any]]:
 
         try:
             response = self.rds_client.execute_statement(
@@ -59,7 +59,7 @@ class RdsUtility:
         except Exception as e:
             raise RDSServiceError("An unexpected error occurred during RDS SELECT") from e
 
-    def _parse_response(self, response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _parse_response(self, response: dict[str, Any]) -> list[dict[str, Any]]:
 
         if 'records' not in response or 'columnMetadata' not in response:
             return []

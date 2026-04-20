@@ -1,56 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationError
+from pydantic import ValidationError
 from .utils import JsonValidator
-
-# Note: EmailStr requires the 'email-validator' package. 
-# For this sample, we'll use a regular str with a regex if email-validator is not installed.
-# But since Pydantic is already installed, let's just use regular field constraints for simplicity 
-# or assume the user might install it later. Let's use a regex for robustness in this environment.
-
-class Product(BaseModel):
-    name: str = Field(..., min_length=2, max_length=50)
-    price: float = Field(..., gt=0)
-    tags: List[str] = Field(default_factory=list)
-
-class Order(BaseModel):
-    order_id: str = Field(..., pattern=r"^[A-Z]{2}-\d{4}$")  # e.g., AB-1234
-    customer_email: str = Field(..., pattern=r"^\S+@\S+\.\S+$")
-    items: List[Product]
-    order_date: datetime = Field(default_factory=datetime.now)
-    priority: int = Field(default=1, ge=1, le=5)
-    discount_code: Optional[str] = None
-
-    @field_validator("items")
-    @classmethod
-    def must_have_items(cls, v):
-        if not v:
-            raise ValueError("Order must have at least one item")
-        return v
-
-    @field_validator("discount_code")
-    @classmethod
-    def check_discount_code(cls, v):
-        if v and not v.isalnum():
-            raise ValueError("Discount code must be alphanumeric")
-        return v
-
-class PartialRequiredModel(BaseModel):
-    item1: str = Field(..., description="Required item 1")
-    item2: str = Field(..., description="Required item 2")
-    item3: str = Field(..., description="Required item 3")
-    item4: Optional[str] = Field(None, description="Optional item 4")
-    item5: Optional[str] = Field(None, description="Optional item 5")
-    item6: Optional[str] = Field(None, description="Optional item 6")
-    item7: Optional[str] = Field(None, description="Optional item 7")
-
-class ComprehensiveModel(BaseModel):
-    required_str: str = Field(..., description="必須チェック (Required)")
-    length_str: str = Field(..., min_length=3, max_length=10, description="文字数チェック (Length: 3-10)")
-    text_data: str = Field(..., description="text型 (String)")
-    number_data: int = Field(..., ge=0, le=100, description="数字型 (Integer: 0-100)")
-    date_data: datetime = Field(..., description="datetime型 (Datetime)")
-    regex_str: str = Field(..., pattern=r"^[A-Z]{3}-\d{3}$", description="正規表現チェック (Regex: AAA-111)")
+from .models import Product, Order, PartialRequiredModel, ComprehensiveModel
 
 def run_validation_samples():
     print("=== Pydantic Validation Samples ===\n")
@@ -186,6 +137,24 @@ def run_validation_samples():
         for error in e.errors():
             loc = " -> ".join(map(str, error['loc']))
             print(f"  [{loc}]: {error['msg']}")
+
+    # 6. Result Tuple Validation (validate_get_errors)
+    print("\n--- Sample 6: Result Tuple Validation (true, None / false, errors) ---")
+    
+    data_missing = {"item1": "A"} # Missing item2, item3
+    
+    is_valid, errors = JsonValidator.validate_get_errors(PartialRequiredModel, data_missing)
+    
+    if not is_valid:
+        print(f"Validation failed (is_valid={is_valid}). Errors count: {len(errors)}")
+        for error in errors:
+            print(f"  - Field: {'.'.join(map(str, error['loc']))}, Error: {error['msg']}")
+    else:
+        print("Validation unexpectedly succeeded.")
+
+    is_valid, errors = JsonValidator.validate_get_errors(PartialRequiredModel, valid_partial)
+    if is_valid:
+        print(f"Validation succeeded (is_valid={is_valid}, errors={errors})")
 
 if __name__ == "__main__":
     run_validation_samples()

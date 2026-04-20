@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from pydantic import BaseModel, Field, ValidationError
 from python_practice.utils.json_validator import JsonValidator
+from python_practice.models import Product, Order, PartialRequiredModel, ComprehensiveModel
 
 class MockModel(BaseModel):
     id: int
@@ -42,14 +43,6 @@ def test_is_valid_true():
 def test_is_valid_false():
     data = {"id": "invalid", "name": "Valid"}
     assert JsonValidator.is_valid(MockModel, data) is False
-
-class ComprehensiveModel(BaseModel):
-    required_str: str = Field(..., description="必須チェック (Required)")
-    length_str: str = Field(..., min_length=3, max_length=10, description="文字数チェック (Length: 3-10)")
-    text_data: str = Field(..., description="text型 (String)")
-    number_data: int = Field(..., ge=0, le=100, description="数字型 (Integer: 0-100)")
-    date_data: datetime = Field(..., description="datetime型 (Datetime)")
-    regex_str: str = Field(..., pattern=r"^[A-Z]{3}-\d{3}$", description="正規表現チェック (Regex: AAA-111)")
 
 def test_comprehensive_validation_errors():
     """
@@ -99,3 +92,24 @@ def test_comprehensive_validation_errors():
     
     assert "regex_str" in error_messages
     assert "match pattern" in error_messages["regex_str"]
+
+def test_validate_get_errors_success():
+    data = {"item1": "A", "item2": "B", "item3": "C"}
+    is_valid, errors = JsonValidator.validate_get_errors(PartialRequiredModel, data)
+    assert is_valid is True
+    assert errors is None
+
+def test_validate_get_errors_failure():
+    data = {"item1": "A"} # Missing item2, item3
+    is_valid, errors = JsonValidator.validate_get_errors(PartialRequiredModel, data)
+    assert is_valid is False
+    assert len(errors) == 2
+    locs = [err['loc'][0] for err in errors]
+    assert "item2" in locs
+    assert "item3" in locs
+
+def test_validate_get_errors_invalid_json():
+    data = '{"invalid": json}'
+    is_valid, errors = JsonValidator.validate_get_errors(PartialRequiredModel, data)
+    assert is_valid is False
+    assert errors[0]["msg"] == "Invalid JSON string"
